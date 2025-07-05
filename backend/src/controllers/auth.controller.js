@@ -2,7 +2,6 @@ import { generateToken } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
-import streamifier from "streamifier";
 
 // ✅ Signup
 export const signup = async (req, res) => {

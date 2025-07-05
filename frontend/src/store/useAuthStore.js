@@ -52,7 +52,7 @@ export const useAuthStore = create((set, get) => ({
     set({ isLoggingIn: true });
     try {
       await axiosInstance.post('/auth/login', data, {
-        withCredentials: true,
+        withCredentials:true,
       });
       await get().checkAuth();
       toast.success('Logged in successfully');

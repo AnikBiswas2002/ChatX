@@ -5,43 +5,33 @@ import express from "express";
 const app = express();
 const server = http.createServer(app);
 
-// userSocketMap: { userId: socketId }
-const userSocketMap = {}; // ✅ Declare this FIRST
+const io = new Server(server, {
+  cors: {
+    origin: ["http://localhost:5173"],
+  },
+});
 
-// ✅ Now safely define this function
 export function getReceiverSocketId(userId) {
   return userSocketMap[userId];
 }
 
-const io = new Server(server, {
-  cors: {
-    origin: ["http://localhost:5173"],
-    credentials: true,
-  },
-});
+// used to store online users
+const userSocketMap = {}; // {userId: socketId}
 
+// ...existing code...
 io.on("connection", (socket) => {
-  const userId = socket.handshake.query.userId;
+  console.log("A user connected", socket.id);
 
-  if (userId) {
-    console.log(`User ${userId} connected: ${socket.id}`);
-    userSocketMap[userId] = socket.id;
+  const userId = socket.handshake.auth.userId; // <-- changed from .query to .auth
+  if (userId) userSocketMap[userId] = socket.id;
 
-    // Broadcast current online users
-    io.emit("onlineUsers", Object.keys(userSocketMap));
-  }
+  io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
   socket.on("disconnect", () => {
-    const disconnectedUserId = Object.keys(userSocketMap).find(
-      (key) => userSocketMap[key] === socket.id
-    );
-
-    if (disconnectedUserId) {
-      console.log(`User ${disconnectedUserId} disconnected`);
-      delete userSocketMap[disconnectedUserId];
-      io.emit("onlineUsers", Object.keys(userSocketMap));
-    }
+    console.log("A user disconnected", socket.id);
+    delete userSocketMap[userId];
+    io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
 });
 
-export { app, server, io };
+export { io, app, server };

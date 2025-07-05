@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=development
+      - MONGO_URL=your_mongo_url_here
+      - PORT=5001
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
