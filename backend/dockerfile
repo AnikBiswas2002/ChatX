@@ -1,20 +1,13 @@
-# Use Node.js 20 to avoid path-to-regexp issue
 FROM node:20
 
-# Set working directory in container
 WORKDIR /app
 
-# Copy only backend package files
-COPY ./package*.json ./
+COPY package*.json ./
 
-# Install backend-only dependencies
 RUN npm install --production
 
-# Copy rest of backend code (everything inside backend/)
 COPY . .
 
-# Expose backend port
 EXPOSE 5001
 
-# Start your backend
-CMD ["npm", "start"]
+CMD ["node", "src/index.js"]

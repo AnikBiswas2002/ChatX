@@ -4,15 +4,23 @@ services:
   backend:
     build:
       context: ./backend
+    working_dir: /app
     ports:
       - "5001:5001"
     environment:
-      - NODE_ENV=development
-      - MONGO_URL=your_mongo_url_here
       - PORT=5001
+      - MONGO_URL=mongodb+srv://anik491981:s05vw7Py70ZOa1kx@cluster0.76bqn3n.mongodb.net/chat_db?retryWrites=true&w=majority&appName=Cluster0
+    depends_on:
+      - mongo
 
   frontend:
     build:
       context: ./frontend
+    working_dir: /app
     ports:
       - "3000:80"
+
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
