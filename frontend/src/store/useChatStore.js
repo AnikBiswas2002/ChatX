@@ -3,6 +3,8 @@ import toast from 'react-hot-toast';
 import { axiosInstance } from '../lib/axios';
 import { useAuthStore } from './useAuthStore';
 
+let subscribedUserId = null;
+
 export const useChatStore = create((set, get) => ({
   messages: [],
   users: [],
@@ -10,7 +12,7 @@ export const useChatStore = create((set, get) => ({
   isUsersLoading: false,
   isMessagesLoading: false,
 
-  // Fetch all users
+  // ✅ Fetch all users
   getUsers: async () => {
     set({ isUsersLoading: true });
     try {
@@ -24,7 +26,7 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  // Fetch chat messages
+  // ✅ Fetch messages with selected user
   getMessages: async (userId) => {
     set({ isMessagesLoading: true });
     try {
@@ -38,7 +40,7 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  // Send new message
+  // ✅ Send a message (via API + socket)
   sendMessage: async (messageData) => {
     const { selectedUser, messages } = get();
     if (!selectedUser?._id) {
@@ -50,7 +52,6 @@ export const useChatStore = create((set, get) => ({
       const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
       set({ messages: [...messages, res.data] });
 
-      // Emit to socket if needed
       const socket = useAuthStore.getState().socket;
       socket?.emit("sendMessage", res.data);
     } catch (error) {
@@ -59,17 +60,25 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  setSelectedUser: (user) => set({ selectedUser: user }),
+  // ✅ Select a user + setup live updates
+  setSelectedUser: (user) => {
+    set({ selectedUser: user, messages: [] });
+    get().unsubscribeFromMessages();       // clean old
+    get().subscribeToMessages();           // setup new
+    get().getMessages(user._id);           // fetch chat
+  },
 
-  // Realtime message subscription via socket.io
+  // ✅ Socket message listener
   subscribeToMessages: () => {
     const { socket } = useAuthStore.getState();
-    const { selectedUser, messages } = get();
+    const { selectedUser } = get();
 
     if (!socket || !selectedUser) return;
+    if (subscribedUserId === selectedUser._id) return;
+
+    socket.off("newMessage");
 
     socket.on("newMessage", (newMsg) => {
-      // Only push message if it's from or to the selected user
       if (
         newMsg.senderId === selectedUser._id ||
         newMsg.receiverId === selectedUser._id
@@ -78,14 +87,17 @@ export const useChatStore = create((set, get) => ({
       }
     });
 
-    console.log(" Subscribed to messages for:", selectedUser.fullname);
+    subscribedUserId = selectedUser._id;
+    console.log("✅ Subscribed to real-time messages for:", selectedUser.fullname);
   },
 
+  // ✅ Clean listener
   unsubscribeFromMessages: () => {
     const { socket } = useAuthStore.getState();
     if (socket) {
       socket.off("newMessage");
-      console.log("Unsubscribed from real-time messages");
+      subscribedUserId = null;
+      console.log("🔌 Unsubscribed from messages");
     }
   },
 }));
